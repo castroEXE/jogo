@@ -1,12 +1,352 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt">
 <head>
- <title>Cchroncre</title>
- <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Corrida Relâmpago</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial;
+overflow:hidden;
+background:black;
+}
+
+/* TELA INICIAL */
+
+#menu{
+position:absolute;
+width:100%;
+height:100%;
+background:#111;
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+color:white;
+}
+
+.flags{
+display:flex;
+gap:20px;
+margin-bottom:40px;
+}
+
+/* Bandeiras em pixel */
+
+.flag{
+width:60px;
+height:40px;
+image-rendering:pixelated;
+}
+
+.brazil{
+background:
+linear-gradient(green,green),
+linear-gradient(yellow,yellow),
+linear-gradient(blue,blue);
+background-size:100% 100%,60% 60%,30% 30%;
+background-position:center;
+background-repeat:no-repeat;
+}
+
+.usa{
+background:
+repeating-linear-gradient(
+red 0px, red 5px,
+white 5px, white 10px
+);
+}
+
+.france{
+background:linear-gradient(
+to right,
+blue 33%,
+white 33%,
+white 66%,
+red 66%
+);
+}
+
+#gobtn{
+padding:15px 40px;
+font-size:20px;
+border:none;
+background:red;
+color:white;
+cursor:pointer;
+border-radius:10px;
+}
+
+/* FUNDO ANIMADO */
+
+@keyframes movebg{
+0%{background-position:0 0}
+100%{background-position:0 200px}
+}
+
+#menu{
+background:
+repeating-linear-gradient(
+gray 0px,
+gray 40px,
+white 40px,
+white 45px
+);
+animation:movebg 3s linear infinite;
+}
+
+/* JOGO */
+
+#game{
+display:none;
+position:absolute;
+width:100%;
+height:100%;
+overflow:hidden;
+background:#c2b280;
+}
+
+#road{
+position:absolute;
+left:20%;
+width:60%;
+height:100%;
+background:#555;
+}
+
+#road::after{
+content:"";
+position:absolute;
+left:50%;
+width:10px;
+height:100%;
+background:repeating-linear-gradient(
+yellow 0px,
+yellow 40px,
+transparent 40px,
+transparent 80px
+);
+transform:translateX(-50%);
+}
+
+/* McQueen */
+
+#player{
+position:absolute;
+width:50px;
+height:80px;
+background:red;
+bottom:20px;
+left:50%;
+transform:translateX(-50%);
+border-radius:10px;
+}
+
+/* obstáculos */
+
+.obstacle{
+position:absolute;
+width:40px;
+height:40px;
+background:black;
+border-radius:5px;
+}
+
+/* inimigos */
+
+.enemy{
+position:absolute;
+width:50px;
+height:80px;
+background:blue;
+border-radius:10px;
+}
+
+/* HUD */
+
+#vida{
+position:absolute;
+top:10px;
+left:10px;
+color:white;
+font-size:20px;
+z-index:2;
+}
+
+/* tela de derrota */
+
+#gameover{
+position:absolute;
+width:100%;
+height:100%;
+background:rgba(255,0,0,0.5);
+display:none;
+align-items:center;
+justify-content:center;
+color:white;
+font-size:40px;
+font-weight:bold;
+z-index:5;
+}
+
+</style>
 </head>
+
 <body>
- <canvas id="gameCanvas" width="640" height="480"></canvas>
- <script src="script.js"></script>
+
+<!-- MENU -->
+
+<div id="menu">
+
+<h1>🏁 Corrida do McQueen</h1>
+
+<div class="flags">
+<div class="flag brazil"></div>
+<div class="flag usa"></div>
+<div class="flag france"></div>
+</div>
+
+<button id="gobtn">INICIAR</button>
+
+</div>
+
+<!-- GAME -->
+
+<div id="game">
+
+<div id="road"></div>
+
+<div id="vida">Vida: 5</div>
+
+<div id="player"></div>
+
+<div id="gameover">
+PERDEU PLAYBOY
+</div>
+
+</div>
+
+<script>
+
+let game=document.getElementById("game")
+let menu=document.getElementById("menu")
+let btn=document.getElementById("gobtn")
+let player=document.getElementById("player")
+let vidaText=document.getElementById("vida")
+let gameover=document.getElementById("gameover")
+
+let vida=5
+let speed=5
+
+btn.onclick=()=>{
+menu.style.display="none"
+game.style.display="block"
+startGame()
+}
+
+let playerX=window.innerWidth/2
+
+document.addEventListener("mousemove",(e)=>{
+playerX=e.clientX
+player.style.left=playerX+"px"
+})
+
+document.addEventListener("touchmove",(e)=>{
+playerX=e.touches[0].clientX
+player.style.left=playerX+"px"
+})
+
+function spawnObstacle(){
+
+let obs=document.createElement("div")
+obs.className="obstacle"
+
+obs.style.left=20+Math.random()*60+"%"
+obs.style.top="-50px"
+
+game.appendChild(obs)
+
+let fall=setInterval(()=>{
+
+let top=parseInt(obs.style.top)
+obs.style.top=top+speed+"px"
+
+if(collision(obs)){
+damage()
+}
+
+if(top>window.innerHeight){
+obs.remove()
+clearInterval(fall)
+}
+
+},20)
+
+}
+
+function spawnEnemy(){
+
+let enemy=document.createElement("div")
+enemy.className="enemy"
+
+enemy.style.left=20+Math.random()*60+"%"
+enemy.style.top="-100px"
+
+game.appendChild(enemy)
+
+let fall=setInterval(()=>{
+
+let top=parseInt(enemy.style.top)
+enemy.style.top=top+speed+"px"
+
+if(collision(enemy)){
+damage()
+}
+
+if(top>window.innerHeight){
+enemy.remove()
+clearInterval(fall)
+}
+
+},20)
+
+}
+
+function collision(obj){
+
+let a=player.getBoundingClientRect()
+let b=obj.getBoundingClientRect()
+
+return !(a.top>b.bottom ||
+a.bottom<b.top ||
+a.right<b.left ||
+a.left>b.right)
+
+}
+
+function damage(){
+
+vida--
+
+vidaText.innerText="Vida: "+vida
+
+if(vida<=0){
+gameover.style.display="flex"
+}
+
+}
+
+function startGame(){
+
+setInterval(spawnObstacle,1500)
+setInterval(spawnEnemy,3000)
+
+}
+
+</script>
+
 </body>
 </html>
 
